@@ -11,17 +11,23 @@ request(url, (error, response, body) => {
   }
 
   const film = JSON.parse(body);
-  const characters = film.characters;
-
-  characters.forEach(characterUrl => {
-    request(characterUrl, (error, response, body) => {
-      if (error) {
-        console.error('Error:', error);
-        return;
-      }
-
-      const character = JSON.parse(body);
-      console.log(character.name);
+  const characterPromises = film.characters.map(characterUrl => {
+    return new Promise((resolve, reject) => {
+      request(characterUrl, (error, response, body) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(JSON.parse(body).name);
+        }
+      });
     });
   });
+
+  Promise.all(characterPromises)
+    .then(characterNames => {
+      characterNames.forEach(name => console.log(name));
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
 });
